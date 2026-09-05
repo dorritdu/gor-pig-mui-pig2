@@ -47,7 +47,7 @@ describe("reminders", () => {
       new Date("2026-03-20T04:00:00Z"),
       "Asia/Hong_Kong",
     );
-    expect(message).toContain("明天");
+    expect(message).toContain("Tomorrow");
     expect(message).toContain("學校旅行");
     expect(message).toContain("白鞋");
     expect(message).toContain("簽回條");
@@ -82,7 +82,7 @@ describe("reminders", () => {
       new Date("2026-03-20T23:00:00Z"), // 21 Mar 07:00 HKT
       "Asia/Hong_Kong",
     );
-    expect(message).toContain("今日要帶");
+    expect(message).toContain("Today pack list");
     expect(message).toContain("白鞋");
     expect(message).not.toContain("交 $120");
   });

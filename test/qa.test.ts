@@ -31,6 +31,8 @@ describe("Q&A helpers", () => {
       [],
     );
     expect(context).toContain("Answer only from this family calendar");
+    expect(context).toContain("Always reply in English");
+    expect(context).not.toContain("same language as the question");
     expect(context).toContain("英文書");
     expect(context).toContain("豬2 Monday bring what?");
   });

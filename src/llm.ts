@@ -43,7 +43,7 @@ export function createLlmClient(env: LlmEnv): LlmClient {
       name: "OpenRouter",
       apiKey: key,
       baseUrl: "https://openrouter.ai/api/v1",
-      model: env.LLM_MODEL || "openrouter/free",
+      model: env.LLM_MODEL || "qwen/qwen2.5-vl-72b-instruct:free",
       extraHeaders: {
         "HTTP-Referer": "https://github.com/dorritdu/gor-pig-mui-pig2",
         "X-Title": "Family notice bot",

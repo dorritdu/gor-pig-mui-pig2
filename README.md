@@ -68,7 +68,7 @@ npm run local
 ```bash
 LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-v1-your-key
-LLM_MODEL=openrouter/free
+LLM_MODEL=qwen/qwen2.5-vl-72b-instruct:free
 ```
 
 Then run `npm run local` again.

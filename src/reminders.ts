@@ -31,7 +31,7 @@ export async function buildReminderMessage(
   if (kind === "parent_evening") {
     const { items, tasks } = await collectAgenda(repo, range.tomorrow, range.tomorrow);
     return formatAgenda(
-      `Tomorrow ${range.tomorrow} / 明天預告`,
+      `Tomorrow ${range.tomorrow}`,
       itemsOnDay(items, range.tomorrow),
       tasksRelevantToDay(tasks, range.tomorrow),
       children,
@@ -42,7 +42,7 @@ export async function buildReminderMessage(
   if (kind === "helper_morning") {
     const { items, tasks } = await collectAgenda(repo, range.today, range.today);
     return formatAgenda(
-      `Today pack list ${range.today} / 今日要帶`,
+      `Today pack list ${range.today}`,
       itemsOnDay(items, range.today),
       tasksRelevantToDay(tasks, range.today).filter((task) => task.assigneeRole === "helper"),
       children,

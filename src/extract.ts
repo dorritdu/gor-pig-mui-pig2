@@ -14,7 +14,7 @@ ${orgLines}
 
 Return ONLY JSON with this shape:
 {
-  "summary": "one short bilingual sentence",
+  "summary": "one short English sentence",
   "rawText": "visible text from the notice",
   "events": [
     {
@@ -38,10 +38,11 @@ Return ONLY JSON with this shape:
 }
 
 Rules:
+- Read Traditional Chinese, Cantonese, and English on the page.
+- All user-facing strings (summary, title, location, itemsToBring, notes, task titles) MUST be English. Keep the original Chinese in rawText only.
 - Dates are Hong Kong local dates. Convert 21/3, 21 Mar, 三月二十一 to YYYY-MM-DD. If year is missing, use the most likely upcoming year.
-- Prefer Traditional Chinese titles when the notice is Chinese; keep English names too in notes if mixed.
-- Reply slips, payments, and signatures become tasks with assigneeRole "parent".
-- Items to bring (shoes, water, costume, form) go in itemsToBring.
+- Reply slips, payments, and signatures become tasks with assigneeRole "parent" and English titles (e.g. "Sign reply slip", "Pay $120").
+- Items to bring (shoes, water, costume, form) go in itemsToBring in English.
 - If the page is not a school/tutorial notice, return events: [].
 - Do not invent dates that are not in the notice.`;
 }

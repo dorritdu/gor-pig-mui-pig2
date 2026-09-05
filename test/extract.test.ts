@@ -39,5 +39,6 @@ describe("extract JSON parsing", () => {
     );
     expect(prompt).toContain("豬1");
     expect(prompt).toContain("學校 A");
+    expect(prompt).toContain("MUST be English");
   });
 });

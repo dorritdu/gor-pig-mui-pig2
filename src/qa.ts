@@ -17,8 +17,10 @@ export function buildQaContext(
   const taskLines = tasks.slice(0, 20).map((task) => `- ${task.title}${task.dueAt ? ` due ${task.dueAt.slice(0, 10)}` : ""}`);
   const notices = noticeSnippets.filter(Boolean).slice(0, 5);
   return [
-    "Answer only from this family calendar. If it is not here, say you are not sure.",
-    "Reply in the same language as the question. Keep it short.",
+    "Answer only from this family calendar. If it is not here, say exactly: I'm not sure.",
+    "Always reply in English, even if the question or notice is Chinese.",
+    "Read Traditional Chinese and Cantonese notices; translate names, dates, and items into English.",
+    "Keep it short. Do not reply in Chinese.",
     "",
     `Question: ${question}`,
     "",

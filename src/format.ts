@@ -33,11 +33,11 @@ export function formatExtractedEvent(event: ExtractedEvent, index: number): stri
   const when = [event.startDate, event.startTime].filter(Boolean).join(" ");
   const lines = [
     `${index + 1}. ${event.title}${when ? ` — ${when}` : ""}`,
-    event.location ? `   地點 / Place: ${event.location}` : null,
-    event.itemsToBring.length ? `   要帶 / Bring: ${event.itemsToBring.join("、")}` : null,
-    event.uniform ? `   校服 / Uniform: ${event.uniform}` : null,
-    event.notes ? `   備註 / Notes: ${event.notes}` : null,
-    event.tasks.length ? `   家長事項 / Parent tasks: ${event.tasks.map((task) => task.title).join("；")}` : null,
+    event.location ? `   Place: ${event.location}` : null,
+    event.itemsToBring.length ? `   Bring: ${event.itemsToBring.join(", ")}` : null,
+    event.uniform ? `   Uniform: ${event.uniform}` : null,
+    event.notes ? `   Notes: ${event.notes}` : null,
+    event.tasks.length ? `   Parent tasks: ${event.tasks.map((task) => task.title).join("; ")}` : null,
   ];
   return lines.filter(Boolean).join("\n");
 }
@@ -148,7 +148,7 @@ function formatAgendaLine(item: AgendaItem, audience: Role | "parent" | "helper"
 
 export function formatWeekList(items: AgendaItem[], children: Child[]): string {
   if (!items.length) return "Nothing in the next 7 days.";
-  const lines = ["Next 7 days / 未來一星期", ""];
+  const lines = ["Next 7 days", ""];
   const days = [...new Set(items.map((item) => item.ymd))].sort();
   for (const ymd of days) {
     lines.push(formatYmdHuman(ymd));
@@ -162,14 +162,14 @@ export function formatWeekList(items: AgendaItem[], children: Child[]): string {
 }
 
 export function formatKids(children: Child[]): string {
-  return ["Kids / 小朋友", ...children.map((child) => `• ${child.id}. ${childLabel(child)}${child.grade ? ` (${child.grade})` : ""}`)].join(
+  return ["Kids", ...children.map((child) => `• ${child.id}. ${childLabel(child)}${child.grade ? ` (${child.grade})` : ""}`)].join(
     "\n",
   );
 }
 
 export function formatTimetable(slots: import("./types.js").TimetableSlot[], children: Child[]): string {
   if (!slots.length) return "No standing timetable yet. Add weekly tutorials with /timetable.";
-  const lines = ["Standing timetable / 固定時間表", ""];
+  const lines = ["Standing timetable", ""];
   for (const slot of [...slots].sort((a, b) => a.weekday - b.weekday || a.startTime.localeCompare(b.startTime))) {
     const child = children.find((item) => item.id === slot.childId);
     const bring = slot.itemsToBring.length ? ` — bring ${slot.itemsToBring.join("、")}` : "";
