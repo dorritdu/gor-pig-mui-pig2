@@ -14,6 +14,7 @@ export interface LlmEnv {
   GEMINI_API_KEY?: string;
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL?: string;
+  DEEPSEEK_API_KEY?: string;
 }
 
 function missingKeyClient(message: string): LlmClient {
@@ -31,8 +32,21 @@ export function createLlmClient(env: LlmEnv): LlmClient {
   const provider = (env.LLM_PROVIDER || inferProvider(env)).toLowerCase();
   if (provider === "none" || provider === "") {
     return missingKeyClient(
-      "No LLM key. From Hong Kong use OpenRouter: add OPENROUTER_API_KEY to .dev.vars (https://openrouter.ai/keys).",
+      "No LLM key. Add DEEPSEEK_API_KEY to .dev.vars (https://platform.deepseek.com).",
     );
+  }
+  if (provider === "deepseek") {
+    const key = env.DEEPSEEK_API_KEY?.trim();
+    if (!key) {
+      return missingKeyClient("DEEPSEEK_API_KEY is missing. Create one at https://platform.deepseek.com");
+    }
+    return new OpenAiCompatClient({
+      name: "DeepSeek",
+      apiKey: key,
+      baseUrl: "https://api.deepseek.com",
+      model: env.LLM_MODEL || "deepseek-chat",
+      supportsVision: false,
+    });
   }
   if (provider === "openrouter") {
     const key = env.OPENROUTER_API_KEY?.trim();
@@ -76,10 +90,11 @@ export function createLlmClient(env: LlmEnv): LlmClient {
     if (!key) return missingKeyClient("GEMINI_API_KEY is missing (not available in Hong Kong — use OpenRouter)");
     return new HttpGeminiClient(key);
   }
-  throw new Error(`Unknown LLM_PROVIDER=${provider}. Use openrouter, groq, ollama, openai, or gemini.`);
+  throw new Error(`Unknown LLM_PROVIDER=${provider}. Use deepseek, openrouter, groq, ollama, openai, or gemini.`);
 }
 
 export function inferProvider(env: LlmEnv): string {
+  if (env.DEEPSEEK_API_KEY?.trim()) return "deepseek";
   if (env.OPENROUTER_API_KEY?.trim()) return "openrouter";
   if (env.GROQ_API_KEY?.trim()) return "groq";
   if (env.GEMINI_API_KEY?.trim()) return "gemini";
@@ -111,6 +126,7 @@ interface OpenAiCompatOptions {
   model: string;
   fallbacks?: string[];
   extraHeaders?: Record<string, string>;
+  supportsVision?: boolean;
 }
 
 export class OpenAiCompatClient implements LlmClient {
@@ -123,12 +139,18 @@ export class OpenAiCompatClient implements LlmClient {
     children: Child[];
     organisations: Organisation[];
   }): Promise<ExtractResult> {
+    const canSeeImage = this.options.supportsVision !== false;
+    if (input.imageBase64 && !input.text && !canSeeImage) {
+      throw new Error(
+        "DeepSeek cannot read photos. Paste the circular as text in Telegram, or type the key details as a caption.",
+      );
+    }
     const content = buildOpenAiContent({
       text: [buildExtractPrompt(input.children, input.organisations), input.text ? `Notice text / caption:\n${input.text}` : ""]
         .filter(Boolean)
         .join("\n\n"),
-      imageBase64: input.imageBase64,
-      mimeType: input.mimeType,
+      imageBase64: canSeeImage ? input.imageBase64 : undefined,
+      mimeType: canSeeImage ? input.mimeType : undefined,
     });
     const text = await this.complete(content);
     const parsed = parseExtractJson(text);

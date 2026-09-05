@@ -10,6 +10,7 @@ export interface Env {
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
   GEMINI_API_KEY?: string;
+  DEEPSEEK_API_KEY?: string;
   OPENROUTER_API_KEY?: string;
   GROQ_API_KEY?: string;
   LLM_PROVIDER?: string;

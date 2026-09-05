@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { buildOpenAiContent, inferProvider, modelsToTry, parseOpenAiChatText } from "../src/llm.js";
 
 describe("LLM provider helpers", () => {
-  it("prefers OpenRouter when that key is present (HK-friendly default)", () => {
-    expect(inferProvider({ OPENROUTER_API_KEY: "sk-or-v1-x", GEMINI_API_KEY: "g" })).toBe("openrouter");
+  it("prefers DeepSeek when that key is present (Hong Kong default)", () => {
+    expect(inferProvider({ DEEPSEEK_API_KEY: "sk-ds", OPENROUTER_API_KEY: "sk-or" })).toBe("deepseek");
+    expect(inferProvider({ OPENROUTER_API_KEY: "sk-or-v1-x" })).toBe("openrouter");
     expect(inferProvider({ GEMINI_API_KEY: "g" })).toBe("gemini");
     expect(inferProvider({ GROQ_API_KEY: "gsk" })).toBe("groq");
     expect(inferProvider({})).toBe("none");

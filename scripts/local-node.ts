@@ -35,10 +35,10 @@ const gemini = hasLlmKey(process.env)
   ? createLlmClient(process.env)
   : {
       async extract() {
-        throw new Error("Add OPENROUTER_API_KEY to .dev.vars to read photos (Gemini is not available in Hong Kong)");
+        throw new Error("Add DEEPSEEK_API_KEY to .dev.vars (https://platform.deepseek.com)");
       },
       async answer() {
-        throw new Error("Add OPENROUTER_API_KEY to .dev.vars for free-text Q&A");
+        throw new Error("Add DEEPSEEK_API_KEY to .dev.vars (https://platform.deepseek.com)");
       },
     };
 
@@ -72,7 +72,7 @@ Open Telegram and send /whoami to @${username}
 Keep this terminal open. Ctrl+C to stop.
 `);
 if (!hasLlmKey(process.env)) {
-  console.log("No LLM key yet — /whoami /kids /today work. For photos, add a free OpenRouter key (Gemini is blocked in Hong Kong).\n");
+  console.log("No DEEPSEEK_API_KEY yet — /whoami /kids /today work. Paste notices as text until you add a DeepSeek key.\n");
 }
 
 let offset = 0;
