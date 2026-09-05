@@ -1,0 +1,30 @@
+name = "family-notice-bot"
+main = "src/index.ts"
+compatibility_date = "2026-09-05"
+
+[vars]
+TIMEZONE = "Asia/Hong_Kong"
+
+# Telegram and Gemini secrets (set with `wrangler secret put`):
+# TELEGRAM_BOT_TOKEN
+# TELEGRAM_WEBHOOK_SECRET
+# GEMINI_API_KEY
+# ADMIN_TELEGRAM_IDS
+# PARENT_TELEGRAM_IDS
+# HELPER_TELEGRAM_IDS
+
+[[d1_databases]]
+binding = "DB"
+database_name = "family-notices"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "family-notices"
+
+# UTC crons that match Hong Kong wall times:
+# 20:00 HKT = 12:00 UTC (parent evening digest)
+# 07:00 HKT = 23:00 UTC (helper morning pack list)
+# Sunday 08:00 HKT = 00:00 UTC Sunday (week-ahead)
+[triggers]
+crons = ["0 12 * * *", "0 23 * * *", "0 0 * * 0"]
