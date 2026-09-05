@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { configFromEnv } from "../src/allowlist.ts";
-import { HttpGeminiClient } from "../src/gemini.ts";
+import { createLlmClient, hasLlmKey } from "../src/llm.ts";
 import { handleUpdate, type FileStore } from "../src/handlers.ts";
 import { MemoryRepo } from "../src/memory-repo.ts";
 import { HttpTelegramClient, type TelegramUpdate } from "../src/telegram.ts";
@@ -31,18 +31,16 @@ Missing TELEGRAM_BOT_TOKEN.
 
 const repo = loadRepo();
 const telegram = new HttpTelegramClient(token);
-const geminiKey = process.env.GEMINI_API_KEY?.trim();
-const gemini =
-  geminiKey && !geminiKey.includes("replace-me")
-    ? new HttpGeminiClient(geminiKey)
-    : {
-        async extract() {
-          throw new Error("Add GEMINI_API_KEY to .dev.vars to read photos and circulars");
-        },
-        async answer() {
-          throw new Error("Add GEMINI_API_KEY to .dev.vars for free-text Q&A");
-        },
-      };
+const gemini = hasLlmKey(process.env)
+  ? createLlmClient(process.env)
+  : {
+      async extract() {
+        throw new Error("Add OPENROUTER_API_KEY to .dev.vars to read photos (Gemini is not available in Hong Kong)");
+      },
+      async answer() {
+        throw new Error("Add OPENROUTER_API_KEY to .dev.vars for free-text Q&A");
+      },
+    };
 
 mkdirSync(FILES_DIR, { recursive: true });
 const files: FileStore = {
@@ -73,8 +71,8 @@ Open Telegram and send /whoami to @${username}
 
 Keep this terminal open. Ctrl+C to stop.
 `);
-if (!geminiKey || geminiKey.includes("replace-me")) {
-  console.log("No GEMINI_API_KEY yet — /whoami /kids /today work; photos need a Gemini key.\n");
+if (!hasLlmKey(process.env)) {
+  console.log("No LLM key yet — /whoami /kids /today work. For photos, add a free OpenRouter key (Gemini is blocked in Hong Kong).\n");
 }
 
 let offset = 0;

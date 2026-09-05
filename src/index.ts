@@ -1,6 +1,6 @@
 import { configFromEnv } from "./allowlist.js";
 import { D1Repo } from "./d1-repo.js";
-import { HttpGeminiClient } from "./gemini.js";
+import { createLlmClient } from "./llm.js";
 import { handleScheduled, handleUpdate, type FileStore } from "./handlers.js";
 import { HttpTelegramClient, type TelegramUpdate } from "./telegram.js";
 
@@ -9,7 +9,13 @@ export interface Env {
   FILES?: R2Bucket;
   TELEGRAM_BOT_TOKEN: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
-  GEMINI_API_KEY: string;
+  GEMINI_API_KEY?: string;
+  OPENROUTER_API_KEY?: string;
+  GROQ_API_KEY?: string;
+  LLM_PROVIDER?: string;
+  LLM_MODEL?: string;
+  OPENAI_API_KEY?: string;
+  OPENAI_BASE_URL?: string;
   ADMIN_TELEGRAM_IDS?: string;
   PARENT_TELEGRAM_IDS?: string;
   HELPER_TELEGRAM_IDS?: string;
@@ -60,7 +66,7 @@ function buildDeps(env: Env) {
   return {
     repo: new D1Repo(env.DB),
     telegram: new HttpTelegramClient(env.TELEGRAM_BOT_TOKEN),
-    gemini: new HttpGeminiClient(env.GEMINI_API_KEY),
+    gemini: createLlmClient(env),
     files,
     clock: () => new Date(),
     config: configFromEnv(env),

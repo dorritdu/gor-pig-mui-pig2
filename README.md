@@ -2,13 +2,13 @@
 
 A private Telegram bot for a busy family: **2 kids, 3 schools, and tutorial centres**.
 
-Forward a screenshot, PDF, or pasted circular. The bot reads it (Gemini Flash), asks you to confirm which child, then answers “tomorrow what do we bring?” and sends:
+Forward a screenshot, PDF, or pasted circular. The bot reads it, asks you to confirm which child, then answers “tomorrow what do we bring?” and sends:
 
 - **20:00 HKT** parent digest (you + partner)
 - **07:00 HKT** helper pack list
 - **Sunday 08:00 HKT** week-ahead
 
-Hosting is **$0**: GitLab (or this git remote) for code/CI only. The live bot and reminder cron run on a **Cloudflare Worker** + **D1** + **R2**. Vision/Q&A uses **Gemini Flash** free tier.
+Hosting is **$0**: GitLab (or this git remote) for code/CI only. The live bot and reminder cron run on a **Cloudflare Worker** + **D1** + **R2**. Vision/Q&A uses **OpenRouter** free models (Gemini / Google AI Studio is not available in Hong Kong).
 
 The bot cannot open WhatsApp, eClass, or school apps. Forward or screenshot those into Telegram.
 
@@ -53,7 +53,7 @@ cp .env.example .dev.vars
 TELEGRAM_BOT_TOKEN=123456:your-real-token
 ```
 
-Leave the family id lines empty for the first run. You do **not** need a Gemini key yet for `/whoami`, `/kids`, `/today`.
+Leave the family id lines empty for the first run. You do **not** need an LLM key yet for `/whoami`, `/kids`, `/today`.
 
 3. Start the bot and keep the terminal open:
 
@@ -63,7 +63,15 @@ npm run local
 
 4. Open Telegram, find your bot, send `/whoami`. You should get your numeric id back.
 5. Then try `/kids`, `/today`, `/timetable`.
-6. When you want it to read screenshots, add a free [Gemini API key](https://aistudio.google.com/apikey) to `.dev.vars` as `GEMINI_API_KEY=` and run `npm run local` again.
+6. To read screenshots from Hong Kong, do **not** use Gemini (Google AI Studio is blocked here). Create a free key at [OpenRouter](https://openrouter.ai/keys), add it to `.dev.vars`:
+
+```bash
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-v1-your-key
+LLM_MODEL=openrouter/free
+```
+
+Then run `npm run local` again.
 
 Stop with Ctrl+C. Do not commit `.dev.vars`.
 
@@ -75,9 +83,9 @@ Stop with Ctrl+C. Do not commit `.dev.vars`.
 2. Copy the token
 3. Each family member starts the bot and sends `/whoami`. Collect those numeric ids.
 
-### 2. Gemini (free)
+### 2. OpenRouter (free, works in Hong Kong)
 
-Create an API key at [Google AI Studio](https://aistudio.google.com/apikey).
+Google AI Studio / Gemini is not offered in Hong Kong. Create a free key at [OpenRouter](https://openrouter.ai/keys) instead.
 
 ### 3. Cloudflare (free)
 
@@ -102,7 +110,8 @@ Edit `seed.sql` first if you want real school names (defaults: 豬1 / 豬2, 學�
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put TELEGRAM_WEBHOOK_SECRET   # long random string
-npx wrangler secret put GEMINI_API_KEY
+npx wrangler secret put OPENROUTER_API_KEY
+npx wrangler secret put LLM_PROVIDER   # openrouter
 npx wrangler secret put ADMIN_TELEGRAM_IDS        # e.g. 111111111
 npx wrangler secret put PARENT_TELEGRAM_IDS       # you + partner
 npx wrangler secret put HELPER_TELEGRAM_IDS
@@ -153,7 +162,7 @@ npm run local
 ```
 src/index.ts       Worker webhook + cron entry
 src/handlers.ts    Commands, ingest, confirm buttons, Q&A
-src/extract.ts     Gemini JSON parsing
+src/extract.ts     LLM JSON parsing
 src/reminders.ts   Parent / helper / week digests
 src/d1-repo.ts     D1 persistence
 src/memory-repo.ts In-memory repo used by tests
@@ -163,4 +172,4 @@ schema.sql / seed.sql
 
 ## Privacy
 
-Only allowlisted Telegram ids can talk to the bot (`/whoami` is the exception so you can collect ids). Original files go to your R2 bucket. Notice text is sent to Gemini for extraction and answers.
+Only allowlisted Telegram ids can talk to the bot (`/whoami` is the exception so you can collect ids). Original files go to your R2 bucket. Notice text is sent to the configured LLM (OpenRouter by default) for extraction and answers.
