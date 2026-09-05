@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildExtractPrompt, matchOrganisation, parseExtractJson } from "../src/extract.js";
-import { PICNIC_EXTRACT_JSON } from "./fixtures/picnic-notice.js";
+import { buildExtractPrompt, looksLikeNotice, matchOrganisation, parseExtractJson } from "../src/extract.js";
+import { PICNIC_EXTRACT_JSON, PICNIC_NOTICE_TEXT } from "./fixtures/picnic-notice.js";
 
 describe("extract JSON parsing", () => {
   it("parses fenced Gemini JSON from a bilingual picnic circular", () => {
@@ -24,6 +24,12 @@ describe("extract JSON parsing", () => {
     expect(matchOrganisation("學校 C", orgs)).toBe(3);
     expect(matchOrganisation("英文", orgs)).toBe(5);
     expect(matchOrganisation("unknown", orgs)).toBeNull();
+  });
+
+  it("treats bilingual circulars as notices, not short questions", () => {
+    expect(looksLikeNotice(PICNIC_NOTICE_TEXT)).toBe(true);
+    expect(looksLikeNotice("豬2 tomorrow bring what?")).toBe(false);
+    expect(looksLikeNotice("any reply slips this week?")).toBe(false);
   });
 
   it("includes family kids in the extract prompt", () => {

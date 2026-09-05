@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { handleScheduled, handleUpdate } from "../src/handlers.js";
+import { PICNIC_NOTICE_TEXT } from "./fixtures/picnic-notice.js";
 import { callbackUpdate, photoUpdate, testDeps, textUpdate } from "./helpers.js";
 
 describe("end-to-end bilingual notice", () => {
@@ -35,5 +36,18 @@ describe("end-to-end bilingual notice", () => {
     expect(helperNote?.text).toContain("白鞋");
     expect(helperNote?.text).toContain("豬2");
     expect(helperNote?.text).not.toContain("交 $120");
+  });
+
+  it("pasted circular text goes through extract + confirm, not Q&A", async () => {
+    const { deps, repo, telegram } = testDeps();
+    await handleUpdate(deps, textUpdate(111, PICNIC_NOTICE_TEXT));
+    expect(repo.drafts.size).toBe(1);
+    expect(telegram.texts().some((text) => /Save|豬2|Ocean Park|旅行/.test(text))).toBe(true);
+    const draftId = [...repo.drafts.keys()][0];
+    await handleUpdate(deps, callbackUpdate(111, `k:${draftId}:2`));
+    await handleUpdate(deps, callbackUpdate(111, `s:${draftId}`));
+    const notice = await repo.getNotice(1);
+    expect(notice?.rawText).toContain("Ocean Park");
+    expect(notice?.source).toBe("text");
   });
 });

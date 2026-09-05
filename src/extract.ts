@@ -131,6 +131,18 @@ function taskArray(value: unknown): ExtractedEvent["tasks"] {
     .filter((task): task is ExtractedEvent["tasks"][number] => Boolean(task));
 }
 
+/** Pasted circulars vs short chat questions. Multi-line school notices win. */
+export function looksLikeNotice(text: string): boolean {
+  const body = text.trim();
+  if (!body || body.startsWith("/")) return false;
+  const lines = body.split(/\n/).map((line) => line.trim()).filter(Boolean);
+  if (lines.length >= 3) return true;
+  if (body.length >= 180 && /\d/.test(body)) return true;
+  const heading = /通告|通函|\bcircular\b|\bnotice\b|學校旅行|school picnic/i.test(body);
+  const dated = /日期|date\b|\d{1,2}\s*月|\d{1,2}[/-]\d{1,2}/i.test(body);
+  return heading && dated;
+}
+
 export function matchOrganisation(name: string | null, organisations: Organisation[]): number | null {
   if (!name) return null;
   const needle = name.toLowerCase();

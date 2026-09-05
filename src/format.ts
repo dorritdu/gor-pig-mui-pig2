@@ -188,6 +188,7 @@ export function formatHelp(role: Role | null): string {
     "/kids — list children",
     "/timetable — weekly tutorials / PE",
     "/whoami — your Telegram id",
+    "/notice — paste a circular as text if it is not auto-detected",
     "Send a photo, PDF, or pasted notice to extract events.",
     "Then ask: “豬2 Monday bring what?”",
   ];

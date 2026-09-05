@@ -1,6 +1,7 @@
 import { isAllowed, roleFor } from "./allowlist.js";
 import { collectAgenda, itemsOnDay, tasksRelevantToDay } from "./agenda.js";
 import { formatAgenda, formatDraftCard, formatHelp, formatKids, formatTimetable, formatWeekList } from "./format.js";
+import { looksLikeNotice } from "./extract.js";
 import { looksLikeAgendaQuery } from "./qa.js";
 import type { FamilyRepo } from "./repo.js";
 import { buildReminderMessage, reminderKindFromCron, reminderLogKey, type ReminderKind } from "./reminders.js";
@@ -113,6 +114,15 @@ async function handleMessage(deps: BotDeps, message: TelegramMessage): Promise<v
     await deps.telegram.sendMessage(chatId, `Add “${name}” as:`, { replyMarkup: addSchoolTypeKeyboard() });
     return;
   }
+  if (command === "/notice") {
+    const body = text.replace(/^\/notice(@\w+)?/i, "").trim();
+    if (!body) {
+      await deps.telegram.sendMessage(chatId, "Paste the circular after /notice, or send a photo / PDF.");
+      return;
+    }
+    await ingestMedia(deps, { ...message, text: body, photo: undefined, document: undefined }, from.id, chatId, body);
+    return;
+  }
   if (command === "/remind") {
     if (role !== "admin" && role !== "parent") {
       await deps.telegram.sendMessage(chatId, "Only parents can trigger a reminder.");
@@ -136,6 +146,11 @@ async function handleMessage(deps: BotDeps, message: TelegramMessage): Promise<v
   const pending = await deps.repo.getPending(from.id);
   if (pending) {
     await deps.telegram.sendMessage(chatId, "Please use the buttons to finish adding the school, or send /addschool again.");
+    return;
+  }
+
+  if (looksLikeNotice(text)) {
+    await ingestMedia(deps, message, from.id, chatId, text);
     return;
   }
 
@@ -397,9 +412,10 @@ async function answerQuestion(deps: BotDeps, chatId: number, text: string, role:
   const range = todayAndRange(deps.clock(), deps.config.timezone);
   const children = await deps.repo.listChildren();
   const { items, events, tasks } = await collectAgenda(deps.repo, range.today, addDays(range.today, 21));
-  const snippets = events
-    .map((event) => event.notes)
-    .filter((note): note is string => Boolean(note));
+  const snippets = [
+    ...events.map((event) => event.notes).filter((note): note is string => Boolean(note)),
+    ...(await noticeTextsForEvents(deps.repo, events)),
+  ];
   try {
     const answer = await deps.gemini.answer(text, items, tasks, children, snippets);
     await deps.telegram.sendMessage(chatId, answer);
@@ -422,6 +438,16 @@ export async function handleScheduled(deps: BotDeps, cron: string): Promise<void
     await deps.telegram.sendMessage(chatId, body);
   }
   await deps.repo.logReminder(key.kind, key.sentOn, now.toISOString());
+}
+
+async function noticeTextsForEvents(repo: FamilyRepo, events: import("./types.js").CalendarEvent[]): Promise<string[]> {
+  const ids = [...new Set(events.map((event) => event.noticeId).filter((id): id is number => id != null))];
+  const texts: string[] = [];
+  for (const id of ids) {
+    const notice = await repo.getNotice(id);
+    if (notice?.rawText) texts.push(notice.rawText.slice(0, 1200));
+  }
+  return texts;
 }
 
 function errorMessage(error: unknown): string {
