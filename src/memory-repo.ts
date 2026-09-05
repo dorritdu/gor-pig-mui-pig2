@@ -91,7 +91,19 @@ export class MemoryRepo implements FamilyRepo {
         notes: "Regular PE day",
       },
     ];
-    this.ids = { child: 3, org: 7, user: 1, notice: 1, event: 1, task: 1, slot: 4 };
+    this.resyncIds();
+  }
+
+  resyncIds(): void {
+    this.ids = {
+      child: nextId(this.children),
+      org: nextId(this.organisations),
+      user: nextId(this.users),
+      notice: nextId(this.notices),
+      event: nextId(this.events),
+      task: nextId(this.tasks),
+      slot: nextId(this.timetable),
+    };
   }
 
   async listChildren(): Promise<Child[]> {
@@ -241,4 +253,8 @@ export class MemoryRepo implements FamilyRepo {
   async logReminder(kind: string, sentOn: string, createdAt: string): Promise<void> {
     this.reminders.push({ kind, sentOn, createdAt });
   }
+}
+
+function nextId(rows: Array<{ id: number }>): number {
+  return rows.reduce((max, row) => Math.max(max, row.id), 0) + 1;
 }

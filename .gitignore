@@ -7,3 +7,5 @@ dist/
 coverage/
 .env
 .env.local
+.local-state.json
+.local-files/
