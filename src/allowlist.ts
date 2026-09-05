@@ -36,13 +36,16 @@ export function allowedIds(config: AppConfig): number[] {
 }
 
 export function isAllowed(config: AppConfig, telegramId: number): boolean {
-  return allowedIds(config).includes(telegramId);
+  const ids = allowedIds(config);
+  if (ids.length === 0) return true;
+  return ids.includes(telegramId);
 }
 
 export function roleFor(config: AppConfig, telegramId: number): Role | null {
   if (config.adminIds.includes(telegramId)) return "admin";
   if (config.parentIds.includes(telegramId)) return "parent";
   if (config.helperIds.includes(telegramId)) return "helper";
+  if (allowedIds(config).length === 0) return "admin";
   return null;
 }
 

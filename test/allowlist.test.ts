@@ -26,4 +26,10 @@ describe("allowlist", () => {
     expect(roleFor(config, 333)).toBe("helper");
     expect(roleFor(config, 999)).toBeNull();
   });
+
+  it("allows everyone as admin when no ids are configured yet", () => {
+    const open = configFromEnv({});
+    expect(isAllowed(open, 424242)).toBe(true);
+    expect(roleFor(open, 424242)).toBe("admin");
+  });
 });

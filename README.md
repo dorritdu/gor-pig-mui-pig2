@@ -34,7 +34,39 @@ The bot cannot open WhatsApp, eClass, or school apps. Forward or screenshot thos
 
 After a notice, tap **豬1 / 豬2 / Both**, then **Save**. Wrong dates stay out of the calendar until you confirm.
 
-## One-time setup
+## Run on your Mac first
+
+Telegram cannot call `localhost`, so `npm run local` long-polls Telegram on your Mac and forwards messages to a local Worker.
+
+1. In Terminal, from this project folder:
+
+```bash
+git checkout cursor/school-notice-bot-0bf3
+npm install
+cp .env.example .dev.vars
+```
+
+2. Open `.dev.vars` and paste the BotFather token:
+
+```bash
+TELEGRAM_BOT_TOKEN=123456:your-real-token
+```
+
+Leave the family id lines empty for the first run. You do **not** need a Gemini key yet for `/whoami`, `/kids`, `/today`.
+
+3. Start the bot and keep the terminal open:
+
+```bash
+npm run local
+```
+
+4. Open Telegram, find your bot, send `/whoami`. You should get your numeric id back.
+5. Then try `/kids`, `/today`, `/timetable`.
+6. When you want it to read screenshots, add a free [Gemini API key](https://aistudio.google.com/apikey) to `.dev.vars` as `GEMINI_API_KEY=` and run `npm run local` again.
+
+Stop with Ctrl+C. Do not commit `.dev.vars`.
+
+## One-time setup (later: Cloudflare deploy)
 
 ### 1. Create the Telegram bot
 
@@ -107,13 +139,12 @@ Worker secrets stay in Cloudflare (`wrangler secret put`), not in GitLab.
 
 ## Local development
 
+`npm run local` is the supported Mac path (creates local D1, starts wrangler, polls Telegram).
+
 ```bash
 npm install
 npm test
-npm run typecheck
-npx wrangler d1 execute family-notices --local --file=./schema.sql
-npx wrangler d1 execute family-notices --local --file=./seed.sql
-npx wrangler dev
+npm run local
 ```
 
 ## Project layout
