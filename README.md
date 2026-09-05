@@ -38,7 +38,20 @@ After a notice, tap **豬1 / 豬2 / Both**, then **Save**. Wrong dates stay out 
 
 Telegram cannot call `localhost`, so `npm run local` long-polls Telegram on your Mac and forwards messages to a local Worker.
 
-1. In Terminal, from this project folder:
+1. Use **Node.js 22+** (Wrangler will not start on Node 20). If `node -v` shows v20:
+
+```bash
+nvm install 22 && nvm use 22
+```
+
+or with Homebrew:
+
+```bash
+brew install node@22
+export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+```
+
+2. In Terminal, from this project folder:
 
 ```bash
 git checkout cursor/school-notice-bot-0bf3
@@ -46,7 +59,7 @@ npm install
 cp .env.example .dev.vars
 ```
 
-2. Open `.dev.vars` and paste the BotFather token:
+3. Open `.dev.vars` and paste the BotFather token:
 
 ```bash
 TELEGRAM_BOT_TOKEN=123456:your-real-token

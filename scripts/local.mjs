@@ -12,6 +12,28 @@ const ROOT = resolve(import.meta.dirname, "..");
 const PORT = process.env.LOCAL_BOT_PORT || "8787";
 const WORKER = `http://127.0.0.1:${PORT}`;
 
+const nodeMajor = Number(process.versions.node.split(".")[0]);
+if (nodeMajor < 22) {
+  console.error(`
+Wrangler needs Node.js 22+. This Mac is on ${process.version}.
+
+If you use nvm:
+  nvm install 22
+  nvm use 22
+  npm install
+  npm run local
+
+If you use Homebrew:
+  brew install node@22
+  echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> ~/.zprofile
+  export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+  node -v
+  npm install
+  npm run local
+`);
+  process.exit(1);
+}
+
 loadDevVars(resolve(ROOT, ".dev.vars"));
 loadDevVars(resolve(ROOT, ".env"));
 
