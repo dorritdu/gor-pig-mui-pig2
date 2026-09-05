@@ -2,7 +2,7 @@ import { isAllowed, roleFor } from "./allowlist.js";
 import { collectAgenda, itemsOnDay, tasksRelevantToDay } from "./agenda.js";
 import { formatAgenda, formatDraftCard, formatHelp, formatKids, formatTimetable, formatWeekList } from "./format.js";
 import { looksLikeNotice } from "./extract.js";
-import { looksLikeAgendaQuery } from "./qa.js";
+import { answerFromCalendar, looksLikeAgendaQuery } from "./qa.js";
 import type { FamilyRepo } from "./repo.js";
 import { buildReminderMessage, reminderKindFromCron, reminderLogKey, type ReminderKind } from "./reminders.js";
 import { applyChildOverride, persistDraft, shortId } from "./save.js";
@@ -420,12 +420,8 @@ async function answerQuestion(deps: BotDeps, chatId: number, text: string, role:
     const answer = await deps.gemini.answer(text, items, tasks, children, snippets);
     await deps.telegram.sendMessage(chatId, answer);
   } catch (error) {
-    await sendAgenda(deps, chatId, "week", role);
-    await deps.telegram.sendMessage(
-      chatId,
-      "I could not reach the language model. Showing this week's list instead. Try again in a minute.",
-    );
     console.error("Q&A failed:", errorMessage(error));
+    await deps.telegram.sendMessage(chatId, answerFromCalendar(text, items, tasks, children));
   }
 }
 

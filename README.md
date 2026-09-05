@@ -68,7 +68,7 @@ npm run local
 ```bash
 LLM_PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-v1-your-key
-LLM_MODEL=google/gemma-4-31b-it:free
+LLM_MODEL=openrouter/free
 ```
 
 Then run `npm run local` again.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildQaContext, looksLikeAgendaQuery } from "../src/qa.js";
+import { answerFromCalendar, buildQaContext, looksLikeAgendaQuery } from "../src/qa.js";
 
 describe("Q&A helpers", () => {
   it("detects bilingual agenda questions", () => {
@@ -9,6 +9,29 @@ describe("Q&A helpers", () => {
     expect(looksLikeAgendaQuery("any reply slips this week?")).toBe("slips");
     expect(looksLikeAgendaQuery("未來一星期")).toBe("week");
     expect(looksLikeAgendaQuery("when is the next school trip?")).toBeNull();
+  });
+
+  it("answers in English from saved events when the LLM is down", () => {
+    const text = answerFromCalendar(
+      "What does pig2 need to bring?",
+      [
+        {
+          ymd: "2026-03-21",
+          childIds: [2],
+          title: "School picnic",
+          time: null,
+          location: "Ocean Park",
+          itemsToBring: ["white shoes", "water"],
+          notes: null,
+          source: "event",
+        },
+      ],
+      [],
+      [{ id: 2, name: "豬2", nickname: "Pig2", grade: null }],
+    );
+    expect(text).toContain("School picnic");
+    expect(text).toContain("white shoes");
+    expect(text).not.toMatch(/不確定|我不能/);
   });
 
   it("grounds the model in stored events only", () => {

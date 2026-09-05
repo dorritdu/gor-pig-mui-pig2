@@ -33,6 +33,40 @@ export function buildQaContext(
   ].join("\n");
 }
 
+/** English answer from saved events — used when OpenRouter is down. */
+export function answerFromCalendar(
+  question: string,
+  items: AgendaItem[],
+  tasks: Task[],
+  children: Child[],
+): string {
+  if (!items.length && !tasks.length) {
+    return "I'm not sure. There are no saved events yet. Send a school notice (photo or pasted text), tap Save, then ask again.";
+  }
+  const q = question.toLowerCase();
+  let filtered = items;
+  if (/pig1|豬1|猪1/.test(q)) filtered = items.filter((item) => item.childIds.includes(1));
+  if (/pig2|豬2|猪2/.test(q)) filtered = items.filter((item) => item.childIds.includes(2));
+  if (!filtered.length) filtered = items;
+
+  const lines = ["Here is what I have saved:", ""];
+  for (const item of filtered.slice(0, 15)) {
+    const kids = namesForChildIds(item.childIds, children);
+    const when = `${item.ymd}${item.time ? ` ${item.time}` : ""}`;
+    const place = item.location ? ` at ${item.location}` : "";
+    const bring = item.itemsToBring.length ? ` Bring: ${item.itemsToBring.join(", ")}.` : "";
+    lines.push(`• ${when} — ${kids}: ${item.title}${place}.${bring}`);
+  }
+  if (tasks.length) {
+    lines.push("", "Open tasks:");
+    for (const task of tasks.slice(0, 8)) {
+      const due = task.dueAt ? ` (due ${task.dueAt.slice(0, 10)})` : "";
+      lines.push(`• ${task.title}${due}`);
+    }
+  }
+  return lines.join("\n");
+}
+
 export function looksLikeAgendaQuery(text: string): "today" | "tomorrow" | "week" | "slips" | null {
   const t = text.toLowerCase();
   if (/slip|回條|payment|交錢|交費/.test(t)) return "slips";
