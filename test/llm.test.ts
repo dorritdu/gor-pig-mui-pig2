@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildOpenAiContent, inferProvider, parseOpenAiChatText } from "../src/llm.js";
+import { buildOpenAiContent, inferProvider, modelsToTry, parseOpenAiChatText } from "../src/llm.js";
 
 describe("LLM provider helpers", () => {
   it("prefers OpenRouter when that key is present (HK-friendly default)", () => {
@@ -20,6 +20,14 @@ describe("LLM provider helpers", () => {
       type: "image_url",
       image_url: { url: "data:image/jpeg;base64,abc" },
     });
+  });
+
+  it("retries a dead free slug with working free vision models", () => {
+    expect(modelsToTry("qwen/qwen2.5-vl-72b-instruct:free", ["google/gemma-4-31b-it:free", "openrouter/free"])).toEqual([
+      "qwen/qwen2.5-vl-72b-instruct:free",
+      "google/gemma-4-31b-it:free",
+      "openrouter/free",
+    ]);
   });
 
   it("reads OpenAI-style chat text", () => {

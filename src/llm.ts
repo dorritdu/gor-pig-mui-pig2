@@ -43,7 +43,8 @@ export function createLlmClient(env: LlmEnv): LlmClient {
       name: "OpenRouter",
       apiKey: key,
       baseUrl: "https://openrouter.ai/api/v1",
-      model: env.LLM_MODEL || "qwen/qwen2.5-vl-72b-instruct:free",
+      model: env.LLM_MODEL || DEFAULT_OPENROUTER_MODEL,
+      fallbacks: OPENROUTER_FREE_VISION_MODELS,
       extraHeaders: {
         "HTTP-Referer": "https://github.com/dorritdu/gor-pig-mui-pig2",
         "X-Title": "Family notice bot",
@@ -90,11 +91,25 @@ export function hasLlmKey(env: LlmEnv): boolean {
   return inferProvider(env) !== "none";
 }
 
+export const DEFAULT_OPENROUTER_MODEL = "google/gemma-4-31b-it:free";
+
+export const OPENROUTER_FREE_VISION_MODELS = [
+  "google/gemma-4-31b-it:free",
+  "google/gemma-4-26b-a4b-it:free",
+  "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  "openrouter/free",
+];
+
+export function modelsToTry(preferred: string, fallbacks: string[] = []): string[] {
+  return [...new Set([preferred, ...fallbacks].filter(Boolean))];
+}
+
 interface OpenAiCompatOptions {
   name: string;
   apiKey: string;
   baseUrl: string;
   model: string;
+  fallbacks?: string[];
   extraHeaders?: Record<string, string>;
 }
 
@@ -132,24 +147,28 @@ export class OpenAiCompatClient implements LlmClient {
   }
 
   private async complete(content: OpenAiContentPart[]): Promise<string> {
-    const response = await fetch(`${this.options.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${this.options.apiKey}`,
-        ...this.options.extraHeaders,
-      },
-      body: JSON.stringify({
-        model: this.options.model,
-        temperature: 0.2,
-        messages: [{ role: "user", content }],
-      }),
-    });
-    const raw = await response.text();
-    if (!response.ok) {
-      throw new Error(`${this.options.name} ${response.status}: ${raw.slice(0, 300)}`);
+    const models = modelsToTry(this.options.model, this.options.fallbacks);
+    let lastError = "";
+    for (const model of models) {
+      const response = await fetch(`${this.options.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${this.options.apiKey}`,
+          ...this.options.extraHeaders,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          messages: [{ role: "user", content }],
+        }),
+      });
+      const raw = await response.text();
+      if (response.ok) return parseOpenAiChatText(raw);
+      lastError = `${this.options.name} ${response.status}: ${raw.slice(0, 180)}`;
+      if (response.status !== 404) break;
     }
-    return parseOpenAiChatText(raw);
+    throw new Error(lastError || `${this.options.name} request failed`);
   }
 }
 

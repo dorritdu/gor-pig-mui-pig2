@@ -421,7 +421,11 @@ async function answerQuestion(deps: BotDeps, chatId: number, text: string, role:
     await deps.telegram.sendMessage(chatId, answer);
   } catch (error) {
     await sendAgenda(deps, chatId, "week", role);
-    await deps.telegram.sendMessage(chatId, `(Q&A fallback: ${errorMessage(error)})`);
+    await deps.telegram.sendMessage(
+      chatId,
+      "I could not reach the language model. Showing this week's list instead. Try again in a minute.",
+    );
+    console.error("Q&A failed:", errorMessage(error));
   }
 }
 
