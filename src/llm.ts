@@ -32,7 +32,7 @@ export function createLlmClient(env: LlmEnv): LlmClient {
   const provider = (env.LLM_PROVIDER || inferProvider(env)).toLowerCase();
   if (provider === "none" || provider === "") {
     return missingKeyClient(
-      "No LLM key. Add DEEPSEEK_API_KEY to .dev.vars (https://platform.deepseek.com).",
+      "No LLM key. Add GROQ_API_KEY to .dev.vars (https://console.groq.com/keys).",
     );
   }
   if (provider === "deepseek") {
@@ -67,12 +67,14 @@ export function createLlmClient(env: LlmEnv): LlmClient {
   }
   if (provider === "groq") {
     const key = env.GROQ_API_KEY?.trim();
-    if (!key) return missingKeyClient("GROQ_API_KEY is missing");
+    if (!key) return missingKeyClient("GROQ_API_KEY is missing. Create one at https://console.groq.com/keys");
     return new OpenAiCompatClient({
       name: "Groq",
       apiKey: key,
       baseUrl: "https://api.groq.com/openai/v1",
-      model: env.LLM_MODEL || "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: env.LLM_MODEL || DEFAULT_GROQ_MODEL,
+      fallbacks: GROQ_VISION_MODELS,
+      supportsVision: true,
     });
   }
   if (provider === "openai" || provider === "ollama") {
@@ -94,9 +96,9 @@ export function createLlmClient(env: LlmEnv): LlmClient {
 }
 
 export function inferProvider(env: LlmEnv): string {
+  if (env.GROQ_API_KEY?.trim()) return "groq";
   if (env.DEEPSEEK_API_KEY?.trim()) return "deepseek";
   if (env.OPENROUTER_API_KEY?.trim()) return "openrouter";
-  if (env.GROQ_API_KEY?.trim()) return "groq";
   if (env.GEMINI_API_KEY?.trim()) return "gemini";
   if (env.OPENAI_API_KEY?.trim() || env.OPENAI_BASE_URL?.trim()) return "openai";
   return "none";
@@ -105,6 +107,14 @@ export function inferProvider(env: LlmEnv): string {
 export function hasLlmKey(env: LlmEnv): boolean {
   return inferProvider(env) !== "none";
 }
+
+export const DEFAULT_GROQ_MODEL = "qwen/qwen3.6-27b";
+
+export const GROQ_VISION_MODELS = [
+  "qwen/qwen3.6-27b",
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+];
 
 export const DEFAULT_OPENROUTER_MODEL = "openrouter/free";
 
@@ -142,7 +152,7 @@ export class OpenAiCompatClient implements LlmClient {
     const canSeeImage = this.options.supportsVision !== false;
     if (input.imageBase64 && !input.text && !canSeeImage) {
       throw new Error(
-        "DeepSeek cannot read photos. Paste the circular as text in Telegram, or type the key details as a caption.",
+        "This model cannot read photos. Paste the circular as text, or switch to Groq.",
       );
     }
     const content = buildOpenAiContent({

@@ -8,15 +8,15 @@ Forward a screenshot, PDF, or pasted circular. The bot reads it, asks you to con
 - **07:00 HKT** helper pack list
 - **Sunday 08:00 HKT** week-ahead
 
-Hosting is **$0**: GitLab (or this git remote) for code/CI only. The live bot and reminder cron run on a **Cloudflare Worker** + **D1** + **R2**. Vision/Q&A uses **DeepSeek** (works from Hong Kong; Gemini is not available here).
+Hosting is **$0**: GitLab (or this git remote) for code/CI only. The live bot and reminder cron run on a **Cloudflare Worker** + **D1** + **R2**. Vision/Q&A uses **Groq** (free tier, reads photos, works from Hong Kong).
 
 The bot cannot open WhatsApp, eClass, or school apps. Forward or screenshot those into Telegram.
 
 ## What you can send
 
-- Pasted text (best with DeepSeek — email body or WhatsApp copy)
-- Photos with a typed caption (DeepSeek reads the caption, not the image)
-- PDF text you can copy and paste
+- Photos / screen captures of circulars (Groq can read these)
+- Pasted text (email body or WhatsApp copy)
+- PDF pages you photograph or copy as text
 - Questions: “Tomorrow what special activities?”, “豬2 Monday bring what?”, “any reply slips?”
 
 ## Commands
@@ -63,15 +63,15 @@ npm run local
 
 4. Open Telegram, find your bot, send `/whoami`. You should get your numeric id back.
 5. Then try `/kids`, `/today`, `/timetable`.
-6. To read Chinese circulars, create a DeepSeek key at [platform.deepseek.com](https://platform.deepseek.com) and put this in `.dev.vars`:
+6. To read photos, create a free Groq key at [console.groq.com/keys](https://console.groq.com/keys) and put this in `.dev.vars`:
 
 ```bash
-LLM_PROVIDER=deepseek
-DEEPSEEK_API_KEY=sk-your-key
-LLM_MODEL=deepseek-chat
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_your-key
+LLM_MODEL=qwen/qwen3.6-27b
 ```
 
-DeepSeek cannot read photos. **Paste the notice as text**, or type the details as a caption. Then run `npm run local` again.
+Then run `npm run local` again. Send a notice photo in Telegram.
 
 Stop with Ctrl+C. Do not commit `.dev.vars`.
 
@@ -83,9 +83,9 @@ Stop with Ctrl+C. Do not commit `.dev.vars`.
 2. Copy the token
 3. Each family member starts the bot and sends `/whoami`. Collect those numeric ids.
 
-### 2. DeepSeek (works in Hong Kong)
+### 2. Groq (free, reads photos, works in Hong Kong)
 
-Create an API key at [platform.deepseek.com](https://platform.deepseek.com). Paste notices as text — DeepSeek does not read photos.
+Create an API key at [console.groq.com/keys](https://console.groq.com/keys).
 
 ### 3. Cloudflare (free)
 
@@ -110,8 +110,8 @@ Edit `seed.sql` first if you want real school names (defaults: 豬1 / 豬2, 學�
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put TELEGRAM_WEBHOOK_SECRET   # long random string
-npx wrangler secret put DEEPSEEK_API_KEY
-npx wrangler secret put LLM_PROVIDER   # deepseek
+npx wrangler secret put GROQ_API_KEY
+npx wrangler secret put LLM_PROVIDER   # groq
 npx wrangler secret put ADMIN_TELEGRAM_IDS        # e.g. 111111111
 npx wrangler secret put PARENT_TELEGRAM_IDS       # you + partner
 npx wrangler secret put HELPER_TELEGRAM_IDS
@@ -172,4 +172,4 @@ schema.sql / seed.sql
 
 ## Privacy
 
-Only allowlisted Telegram ids can talk to the bot (`/whoami` is the exception so you can collect ids). Original files go to your R2 bucket. Notice text is sent to DeepSeek for extraction and answers.
+Only allowlisted Telegram ids can talk to the bot (`/whoami` is the exception so you can collect ids). Original files go to your R2 bucket. Notice photos and text are sent to Groq for extraction and answers.
