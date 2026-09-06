@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { buildOpenAiContent, inferProvider, modelsToTry, parseOpenAiChatText } from "../src/llm.js";
 
 describe("LLM provider helpers", () => {
-  it("prefers Groq when that key is present (photo reader)", () => {
+  it("uses Ollama when that is the configured provider", () => {
+    expect(inferProvider({ LLM_PROVIDER: "ollama" })).toBe("ollama");
+    expect(inferProvider({ OPENAI_BASE_URL: "http://127.0.0.1:11434/v1" })).toBe("ollama");
     expect(inferProvider({ GROQ_API_KEY: "gsk", DEEPSEEK_API_KEY: "sk-ds" })).toBe("groq");
     expect(inferProvider({ DEEPSEEK_API_KEY: "sk-ds" })).toBe("deepseek");
     expect(inferProvider({ OPENROUTER_API_KEY: "sk-or-v1-x" })).toBe("openrouter");

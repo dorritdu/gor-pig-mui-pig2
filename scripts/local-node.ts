@@ -5,7 +5,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { configFromEnv } from "../src/allowlist.ts";
-import { createLlmClient, hasLlmKey } from "../src/llm.ts";
+import {
+  createLlmClient,
+  DEFAULT_OLLAMA_BASE_URL,
+  DEFAULT_OLLAMA_MODEL,
+  hasLlmKey,
+  inferProvider,
+} from "../src/llm.ts";
 import { handleUpdate, type FileStore } from "../src/handlers.ts";
 import { MemoryRepo } from "../src/memory-repo.ts";
 import { HttpTelegramClient, type TelegramUpdate } from "../src/telegram.ts";
@@ -31,14 +37,19 @@ Missing TELEGRAM_BOT_TOKEN.
 
 const repo = loadRepo();
 const telegram = new HttpTelegramClient(token);
+const provider = inferProvider(process.env);
 const gemini = hasLlmKey(process.env)
   ? createLlmClient(process.env)
   : {
       async extract() {
-        throw new Error("Add GROQ_API_KEY to .dev.vars (https://console.groq.com/keys)");
+        throw new Error(
+          "Ollama is not set up. Install https://ollama.com/download then run: ollama pull qwen2.5vl",
+        );
       },
       async answer() {
-        throw new Error("Add GROQ_API_KEY to .dev.vars (https://console.groq.com/keys)");
+        throw new Error(
+          "Ollama is not set up. Install https://ollama.com/download then run: ollama pull qwen2.5vl",
+        );
       },
     };
 
@@ -71,8 +82,10 @@ Open Telegram and send /whoami to @${username}
 
 Keep this terminal open. Ctrl+C to stop.
 `);
+await warnLlmSetup(provider);
+
 if (!hasLlmKey(process.env)) {
-  console.log("No GROQ_API_KEY yet — /whoami /kids /today work. Add a Groq key to read photos.\n");
+  console.log("/whoami /kids /today work now. To read photos, install Ollama and run: ollama pull qwen2.5vl\n");
 }
 
 let offset = 0;
@@ -199,4 +212,48 @@ async function telegramCall(botToken: string, method: string, body: Record<strin
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
+}
+
+async function warnLlmSetup(activeProvider: string): Promise<void> {
+  if (activeProvider === "groq" || activeProvider === "gemini") {
+    console.warn(
+      `${activeProvider} is blocked from Hong Kong. Do not use console.groq.com. Use Ollama on this Mac instead.`,
+    );
+    console.warn("In .dev.vars set LLM_PROVIDER=ollama and LLM_MODEL=qwen2.5vl, then: ollama pull qwen2.5vl\n");
+    return;
+  }
+  if (activeProvider !== "ollama") return;
+
+  const baseUrl = process.env.OPENAI_BASE_URL?.trim() || DEFAULT_OLLAMA_BASE_URL;
+  const model = process.env.LLM_MODEL?.trim() || DEFAULT_OLLAMA_MODEL;
+  const status = await probeOllama(baseUrl, model);
+  if (status.ok) {
+    console.log(`LLM: Ollama at ${baseUrl} model ${model}\n`);
+    return;
+  }
+  if (status.reason === "down") {
+    console.warn("Ollama is not running. Photos will fail until you do this:");
+    console.warn("  1. Install https://ollama.com/download and open the app");
+    console.warn("  2. ollama pull qwen2.5vl");
+    console.warn("  3. npm run local\n");
+    return;
+  }
+  console.warn(`Ollama is running but ${model} is not installed. Run: ollama pull ${model}\n`);
+}
+
+async function probeOllama(
+  baseUrl: string,
+  model: string,
+): Promise<{ ok: boolean; reason?: "down" | "missing-model" }> {
+  const root = baseUrl.replace(/\/v1\/?$/, "");
+  try {
+    const res = await fetch(`${root}/api/tags`, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return { ok: false, reason: "down" };
+    const body = (await res.json()) as { models?: Array<{ name?: string }> };
+    const names = (body.models ?? []).map((item) => item.name ?? "");
+    const found = names.some((name) => name === model || name.startsWith(`${model}:`));
+    return found ? { ok: true } : { ok: false, reason: "missing-model" };
+  } catch {
+    return { ok: false, reason: "down" };
+  }
 }

@@ -67,8 +67,8 @@ Open Telegram and send /whoami to @${username}
 Keep this terminal open. Ctrl+C to stop.
 `);
 
-if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY.includes("replace-me")) {
-  console.log("GEMINI_API_KEY is not set yet — /whoami, /kids, /today work; reading photos needs a Gemini key.\n");
+if ((process.env.LLM_PROVIDER || "ollama") === "ollama") {
+  console.log("Photos need Ollama on this Mac: https://ollama.com/download then `ollama pull qwen2.5vl`\n");
 }
 
 let offset = 0;

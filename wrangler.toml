@@ -5,10 +5,9 @@ compatibility_date = "2026-09-05"
 [vars]
 TIMEZONE = "Asia/Hong_Kong"
 
-# Telegram and Gemini secrets (set with `wrangler secret put`):
+# Telegram secrets (set with `wrangler secret put`):
 # TELEGRAM_BOT_TOKEN
 # TELEGRAM_WEBHOOK_SECRET
-# GEMINI_API_KEY
 # ADMIN_TELEGRAM_IDS
 # PARENT_TELEGRAM_IDS
 # HELPER_TELEGRAM_IDS

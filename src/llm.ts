@@ -28,12 +28,13 @@ function missingKeyClient(message: string): LlmClient {
   };
 }
 
+const OLLAMA_MISSING =
+  "Ollama is not set up. Install https://ollama.com/download , run `ollama pull qwen2.5vl`, then npm run local.";
+
 export function createLlmClient(env: LlmEnv): LlmClient {
-  const provider = (env.LLM_PROVIDER || inferProvider(env)).toLowerCase();
+  const provider = inferProvider(env);
   if (provider === "none" || provider === "") {
-    return missingKeyClient(
-      "No LLM key. Add GROQ_API_KEY to .dev.vars (https://console.groq.com/keys).",
-    );
+    return missingKeyClient(OLLAMA_MISSING);
   }
   if (provider === "deepseek") {
     const key = env.DEEPSEEK_API_KEY?.trim();
@@ -79,12 +80,13 @@ export function createLlmClient(env: LlmEnv): LlmClient {
   }
   if (provider === "openai" || provider === "ollama") {
     const key = env.OPENAI_API_KEY?.trim() || "ollama";
-    const baseUrl = (env.OPENAI_BASE_URL || "http://127.0.0.1:11434/v1").replace(/\/$/, "");
+    const baseUrl = (env.OPENAI_BASE_URL || DEFAULT_OLLAMA_BASE_URL).replace(/\/$/, "");
     return new OpenAiCompatClient({
       name: provider === "ollama" ? "Ollama" : "OpenAI-compatible",
       apiKey: key,
       baseUrl,
-      model: env.LLM_MODEL || "qwen2.5vl",
+      model: env.LLM_MODEL || DEFAULT_OLLAMA_MODEL,
+      supportsVision: true,
     });
   }
   if (provider === "gemini") {
@@ -96,6 +98,10 @@ export function createLlmClient(env: LlmEnv): LlmClient {
 }
 
 export function inferProvider(env: LlmEnv): string {
+  const explicit = env.LLM_PROVIDER?.trim().toLowerCase();
+  if (explicit) return explicit;
+  const base = env.OPENAI_BASE_URL?.trim() ?? "";
+  if (base.includes("11434") || base.includes("ollama")) return "ollama";
   if (env.GROQ_API_KEY?.trim()) return "groq";
   if (env.DEEPSEEK_API_KEY?.trim()) return "deepseek";
   if (env.OPENROUTER_API_KEY?.trim()) return "openrouter";
@@ -107,6 +113,9 @@ export function inferProvider(env: LlmEnv): string {
 export function hasLlmKey(env: LlmEnv): boolean {
   return inferProvider(env) !== "none";
 }
+
+export const DEFAULT_OLLAMA_MODEL = "qwen2.5vl";
+export const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
 
 export const DEFAULT_GROQ_MODEL = "qwen/qwen3.6-27b";
 
@@ -151,7 +160,7 @@ export class OpenAiCompatClient implements LlmClient {
     const canSeeImage = this.options.supportsVision !== false;
     if (input.imageBase64 && !input.text && !canSeeImage) {
       throw new Error(
-        "This model cannot read photos. Paste the circular as text, or switch to Groq.",
+        "This model cannot read photos. Paste the circular as text, or use Ollama (qwen2.5vl).",
       );
     }
     const content = buildOpenAiContent({

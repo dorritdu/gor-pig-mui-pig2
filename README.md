@@ -8,13 +8,13 @@ Forward a screenshot, PDF, or pasted circular. The bot reads it, asks you to con
 - **07:00 HKT** helper pack list
 - **Sunday 08:00 HKT** week-ahead
 
-Hosting is **$0**: GitLab (or this git remote) for code/CI only. The live bot and reminder cron run on a **Cloudflare Worker** + **D1** + **R2**. Vision/Q&A uses **Groq** (free tier, reads photos, works from Hong Kong).
+Hosting is **$0**. On your Mac, photos are read by **Ollama** (`qwen2.5vl`) so they stay on this computer. Groq and Gemini websites are blocked from Hong Kong — do not use them. Cloudflare Worker + D1 + R2 is for a later public deploy.
 
 The bot cannot open WhatsApp, eClass, or school apps. Forward or screenshot those into Telegram.
 
 ## What you can send
 
-- Photos / screen captures of circulars (Groq can read these)
+- Photos / screen captures of circulars (Ollama `qwen2.5vl` reads these on your Mac)
 - Pasted text (email body or WhatsApp copy)
 - PDF pages you photograph or copy as text
 - Questions: “Tomorrow what special activities?”, “豬2 Monday bring what?”, “any reply slips?”
@@ -53,25 +53,31 @@ cp .env.example .dev.vars
 TELEGRAM_BOT_TOKEN=123456:your-real-token
 ```
 
-Leave the family id lines empty for the first run. You do **not** need an LLM key yet for `/whoami`, `/kids`, `/today`.
+Leave the family id lines empty for the first run. `/whoami`, `/kids`, and `/today` work without Ollama.
 
-3. Start the bot and keep the terminal open:
+3. To read photos, install [Ollama](https://ollama.com/download), open the app, then:
+
+```bash
+ollama pull qwen2.5vl
+```
+
+That model is listed at [ollama.com/library/qwen2.5vl](https://ollama.com/library/qwen2.5vl) (~6 GB). In `.dev.vars` keep these lines (replace any `LLM_PROVIDER=groq` block):
+
+```bash
+LLM_PROVIDER=ollama
+OPENAI_BASE_URL=http://127.0.0.1:11434/v1
+OPENAI_API_KEY=ollama
+LLM_MODEL=qwen2.5vl
+```
+
+4. Start the bot and keep the terminal open:
 
 ```bash
 npm run local
 ```
 
-4. Open Telegram, find your bot, send `/whoami`. You should get your numeric id back.
-5. Then try `/kids`, `/today`, `/timetable`.
-6. To read photos, create a free Groq key at [console.groq.com/keys](https://console.groq.com/keys) and put this in `.dev.vars`:
-
-```bash
-LLM_PROVIDER=groq
-GROQ_API_KEY=gsk_your-key
-LLM_MODEL=qwen/qwen3.6-27b
-```
-
-Then run `npm run local` again. Send a notice photo in Telegram.
+5. Open Telegram, find your bot, send `/whoami`. You should get your numeric id back.
+6. Then try `/kids`, `/today`, `/timetable`. Send a notice photo.
 
 Stop with Ctrl+C. Do not commit `.dev.vars`.
 
@@ -83,11 +89,7 @@ Stop with Ctrl+C. Do not commit `.dev.vars`.
 2. Copy the token
 3. Each family member starts the bot and sends `/whoami`. Collect those numeric ids.
 
-### 2. Groq (free, reads photos, works in Hong Kong)
-
-Create an API key at [console.groq.com/keys](https://console.groq.com/keys).
-
-### 3. Cloudflare (free)
+### 2. Cloudflare (free)
 
 ```bash
 npm install
@@ -105,13 +107,11 @@ npx wrangler d1 execute family-notices --remote --file=./seed.sql
 
 Edit `seed.sql` first if you want real school names (defaults: 豬1 / 豬2, 學校 A/B/C, 數學/英文/鋼琴).
 
-### 4. Secrets
+### 3. Secrets
 
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put TELEGRAM_WEBHOOK_SECRET   # long random string
-npx wrangler secret put GROQ_API_KEY
-npx wrangler secret put LLM_PROVIDER   # groq
 npx wrangler secret put ADMIN_TELEGRAM_IDS        # e.g. 111111111
 npx wrangler secret put PARENT_TELEGRAM_IDS       # you + partner
 npx wrangler secret put HELPER_TELEGRAM_IDS
@@ -119,7 +119,7 @@ npx wrangler secret put HELPER_TELEGRAM_IDS
 
 Copy `.env.example` to `.dev.vars` for local `wrangler dev`.
 
-### 5. Deploy and point Telegram at the Worker
+### 4. Deploy and point Telegram at the Worker
 
 ```bash
 npm test
@@ -149,7 +149,7 @@ Worker secrets stay in Cloudflare (`wrangler secret put`), not in GitLab.
 
 ## Local development
 
-`npm run local` is the supported Mac path (creates local D1, starts wrangler, polls Telegram).
+`npm run local` is the supported Mac path (Node 20, no Wrangler). It long-polls Telegram on this computer.
 
 ```bash
 npm install
@@ -172,4 +172,4 @@ schema.sql / seed.sql
 
 ## Privacy
 
-Only allowlisted Telegram ids can talk to the bot (`/whoami` is the exception so you can collect ids). Original files go to your R2 bucket. Notice photos and text are sent to Groq for extraction and answers.
+Only allowlisted Telegram ids can talk to the bot (`/whoami` is the exception so you can collect ids). On the Mac, notice photos stay on this computer (Ollama). They are not sent to Groq or Gemini.
