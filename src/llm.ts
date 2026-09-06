@@ -112,8 +112,7 @@ export const DEFAULT_GROQ_MODEL = "qwen/qwen3.6-27b";
 
 export const GROQ_VISION_MODELS = [
   "qwen/qwen3.6-27b",
-  "meta-llama/llama-4-maverick-17b-128e-instruct",
-  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "qwen/qwen3.8-27b",
 ];
 
 export const DEFAULT_OPENROUTER_MODEL = "openrouter/free";
