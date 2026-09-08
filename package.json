@@ -1,0 +1,26 @@
+{
+  "name": "gor-pig-mui-pig2",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "local": "tsx scripts/local-node.ts",
+    "local:wrangler": "node scripts/local.mjs",
+    "db:migrate:local": "wrangler d1 execute family-notices --local --file=./schema.sql",
+    "db:seed:local": "wrangler d1 execute family-notices --local --file=./seed.sql"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260903.1",
+    "typescript": "^5.9.2",
+    "tsx": "^4.20.5",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.34.0"
+  }
+}

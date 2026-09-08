@@ -1,0 +1,37 @@
+# GitLab is used for test + deploy only. The live bot and reminder cron
+# run on a Cloudflare Worker — not inside these CI jobs.
+
+stages:
+  - test
+  - deploy
+
+default:
+  image: node:22-bookworm
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - node_modules/
+
+test:
+  stage: test
+  script:
+    - npm ci
+    - npm test
+    - npm run typecheck
+
+deploy:
+  stage: deploy
+  resource_group: production
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - npm ci
+    - npx wrangler deploy
+  environment:
+    name: production
+  # Required GitLab CI variables (masked):
+  # CLOUDFLARE_ACCOUNT_ID
+  # CLOUDFLARE_API_TOKEN
+  # Wrangler secrets for the Worker are set once with `wrangler secret put`,
+  # not on every pipeline.
