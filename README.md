@@ -36,7 +36,16 @@ After a notice, tap **豬1 / 豬2 / Both**, then **Save**. Wrong dates stay out 
 
 ## Run on your Mac first
 
-`npm run local` works on **Node 20** (your Mac). It talks to Telegram from this computer — no Cloudflare and no Node 22.
+`npm run local` talks to Telegram from this computer — no Cloudflare.
+
+0. If Terminal says `command not found: npm`, install Node.js first: open [https://nodejs.org](https://nodejs.org), download **LTS**, run the `.pkg` installer, then **quit Terminal fully** (Cmd+Q) and open it again. Check:
+
+```bash
+node -v
+npm -v
+```
+
+You need both commands to print a version. Node 20 or newer is fine.
 
 1. In Terminal, from this project folder:
 
