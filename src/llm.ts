@@ -15,6 +15,8 @@ export interface LlmEnv {
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL?: string;
   DEEPSEEK_API_KEY?: string;
+  MOONSHOT_API_KEY?: string;
+  KIMI_API_KEY?: string;
 }
 
 function missingKeyClient(message: string): LlmClient {
@@ -28,13 +30,30 @@ function missingKeyClient(message: string): LlmClient {
   };
 }
 
-const OLLAMA_MISSING =
-  "Ollama is not set up. Install https://ollama.com/download , run `ollama pull qwen2.5vl`, then npm run local.";
+export function kimiApiKey(env: LlmEnv): string {
+  return env.MOONSHOT_API_KEY?.trim() || env.KIMI_API_KEY?.trim() || "";
+}
+
+const KIMI_MISSING =
+  "Add MOONSHOT_API_KEY to .dev.vars. Create a key at https://platform.kimi.ai (Hong Kong uses this site).";
 
 export function createLlmClient(env: LlmEnv): LlmClient {
   const provider = inferProvider(env);
   if (provider === "none" || provider === "") {
-    return missingKeyClient(OLLAMA_MISSING);
+    return missingKeyClient(KIMI_MISSING);
+  }
+  if (provider === "kimi" || provider === "moonshot") {
+    const key = kimiApiKey(env);
+    if (!key) return missingKeyClient(KIMI_MISSING);
+    return new OpenAiCompatClient({
+      name: "Kimi",
+      apiKey: key,
+      baseUrl: DEFAULT_KIMI_BASE_URL,
+      model: env.LLM_MODEL || DEFAULT_KIMI_MODEL,
+      fallbacks: KIMI_VISION_MODELS,
+      supportsVision: true,
+      sendTemperature: false,
+    });
   }
   if (provider === "deepseek") {
     const key = env.DEEPSEEK_API_KEY?.trim();
@@ -94,12 +113,16 @@ export function createLlmClient(env: LlmEnv): LlmClient {
     if (!key) return missingKeyClient("GEMINI_API_KEY is missing (not available in Hong Kong — use OpenRouter)");
     return new HttpGeminiClient(key);
   }
-  throw new Error(`Unknown LLM_PROVIDER=${provider}. Use deepseek, openrouter, groq, ollama, openai, or gemini.`);
+  throw new Error(
+    `Unknown LLM_PROVIDER=${provider}. Use kimi, ollama, deepseek, openrouter, groq, openai, or gemini.`,
+  );
 }
 
 export function inferProvider(env: LlmEnv): string {
   const explicit = env.LLM_PROVIDER?.trim().toLowerCase();
+  if (explicit === "moonshot") return "kimi";
   if (explicit) return explicit;
+  if (kimiApiKey(env)) return "kimi";
   const base = env.OPENAI_BASE_URL?.trim() ?? "";
   if (base.includes("11434") || base.includes("ollama")) return "ollama";
   if (env.GROQ_API_KEY?.trim()) return "groq";
@@ -111,8 +134,18 @@ export function inferProvider(env: LlmEnv): string {
 }
 
 export function hasLlmKey(env: LlmEnv): boolean {
-  return inferProvider(env) !== "none";
+  const provider = inferProvider(env);
+  if (provider === "none" || provider === "") return false;
+  if (provider === "kimi") return Boolean(kimiApiKey(env));
+  if (provider === "ollama") return true;
+  return true;
 }
+
+export const DEFAULT_KIMI_MODEL = "kimi-k3";
+export const DEFAULT_KIMI_BASE_URL = "https://api.moonshot.ai/v1";
+
+/** Official vision IDs: https://platform.kimi.ai/docs/guide/use-kimi-vision-model */
+export const KIMI_VISION_MODELS = ["kimi-k3", "kimi-k2.6"];
 
 export const DEFAULT_OLLAMA_MODEL = "qwen2.5vl";
 export const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1";
@@ -145,6 +178,7 @@ interface OpenAiCompatOptions {
   fallbacks?: string[];
   extraHeaders?: Record<string, string>;
   supportsVision?: boolean;
+  sendTemperature?: boolean;
 }
 
 export class OpenAiCompatClient implements LlmClient {
@@ -160,7 +194,7 @@ export class OpenAiCompatClient implements LlmClient {
     const canSeeImage = this.options.supportsVision !== false;
     if (input.imageBase64 && !input.text && !canSeeImage) {
       throw new Error(
-        "This model cannot read photos. Paste the circular as text, or use Ollama (qwen2.5vl).",
+        "This model cannot read photos. Paste the circular as text, or use Kimi (kimi-k3).",
       );
     }
     const content = buildOpenAiContent({
@@ -191,6 +225,14 @@ export class OpenAiCompatClient implements LlmClient {
     const messageContent = content.length === 1 && content[0]?.type === "text" ? content[0].text : content;
     let lastError = "";
     for (const model of models) {
+      const payload: Record<string, unknown> = {
+        model,
+        messages: [{ role: "user", content: messageContent }],
+      };
+      if (this.options.sendTemperature !== false) payload.temperature = 0.2;
+      // K3 forbids custom temperature and always thinks; low keeps notice extracts faster.
+      // https://platform.kimi.ai/docs/guide/kimi-k3-quickstart
+      if (model.startsWith("kimi-k3")) payload.reasoning_effort = "low";
       const response = await fetch(`${this.options.baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
@@ -198,11 +240,7 @@ export class OpenAiCompatClient implements LlmClient {
           authorization: `Bearer ${this.options.apiKey}`,
           ...this.options.extraHeaders,
         },
-        body: JSON.stringify({
-          model,
-          temperature: 0.2,
-          messages: [{ role: "user", content: messageContent }],
-        }),
+        body: JSON.stringify(payload),
       });
       const raw = await response.text();
       if (response.ok) return parseOpenAiChatText(raw);

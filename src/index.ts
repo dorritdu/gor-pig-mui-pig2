@@ -13,6 +13,8 @@ export interface Env {
   DEEPSEEK_API_KEY?: string;
   OPENROUTER_API_KEY?: string;
   GROQ_API_KEY?: string;
+  MOONSHOT_API_KEY?: string;
+  KIMI_API_KEY?: string;
   LLM_PROVIDER?: string;
   LLM_MODEL?: string;
   OPENAI_API_KEY?: string;

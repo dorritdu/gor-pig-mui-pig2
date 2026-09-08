@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { buildOpenAiContent, inferProvider, modelsToTry, parseOpenAiChatText } from "../src/llm.js";
+import { buildOpenAiContent, hasLlmKey, inferProvider, kimiApiKey, modelsToTry, parseOpenAiChatText } from "../src/llm.js";
 
 describe("LLM provider helpers", () => {
-  it("uses Ollama when that is the configured provider", () => {
+  it("uses Kimi when that key or provider is set", () => {
+    expect(inferProvider({ LLM_PROVIDER: "kimi", MOONSHOT_API_KEY: "sk" })).toBe("kimi");
+    expect(inferProvider({ LLM_PROVIDER: "moonshot", KIMI_API_KEY: "sk" })).toBe("kimi");
+    expect(inferProvider({ MOONSHOT_API_KEY: "sk" })).toBe("kimi");
+    expect(kimiApiKey({ KIMI_API_KEY: "sk-kimi" })).toBe("sk-kimi");
+    expect(hasLlmKey({ LLM_PROVIDER: "kimi" })).toBe(false);
+    expect(hasLlmKey({ LLM_PROVIDER: "kimi", MOONSHOT_API_KEY: "sk" })).toBe(true);
     expect(inferProvider({ LLM_PROVIDER: "ollama" })).toBe("ollama");
     expect(inferProvider({ OPENAI_BASE_URL: "http://127.0.0.1:11434/v1" })).toBe("ollama");
     expect(inferProvider({ GROQ_API_KEY: "gsk", DEEPSEEK_API_KEY: "sk-ds" })).toBe("groq");
@@ -25,12 +31,8 @@ describe("LLM provider helpers", () => {
     });
   });
 
-  it("retries a dead free slug with working free vision models", () => {
-    expect(modelsToTry("qwen/qwen2.5-vl-72b-instruct:free", ["google/gemma-4-31b-it:free", "openrouter/free"])).toEqual([
-      "qwen/qwen2.5-vl-72b-instruct:free",
-      "google/gemma-4-31b-it:free",
-      "openrouter/free",
-    ]);
+  it("retries Kimi vision models in official-id order", () => {
+    expect(modelsToTry("kimi-k3", ["kimi-k3", "kimi-k2.6"])).toEqual(["kimi-k3", "kimi-k2.6"]);
   });
 
   it("reads OpenAI-style chat text", () => {

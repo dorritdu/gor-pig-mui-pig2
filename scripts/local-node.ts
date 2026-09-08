@@ -7,10 +7,10 @@ import { resolve } from "node:path";
 import { configFromEnv } from "../src/allowlist.ts";
 import {
   createLlmClient,
-  DEFAULT_OLLAMA_BASE_URL,
-  DEFAULT_OLLAMA_MODEL,
+  DEFAULT_KIMI_MODEL,
   hasLlmKey,
   inferProvider,
+  kimiApiKey,
 } from "../src/llm.ts";
 import { handleUpdate, type FileStore } from "../src/handlers.ts";
 import { MemoryRepo } from "../src/memory-repo.ts";
@@ -43,12 +43,12 @@ const gemini = hasLlmKey(process.env)
   : {
       async extract() {
         throw new Error(
-          "Ollama is not set up. Install https://ollama.com/download then run: ollama pull qwen2.5vl",
+          "Add MOONSHOT_API_KEY to .dev.vars. Create a key at https://platform.kimi.ai",
         );
       },
       async answer() {
         throw new Error(
-          "Ollama is not set up. Install https://ollama.com/download then run: ollama pull qwen2.5vl",
+          "Add MOONSHOT_API_KEY to .dev.vars. Create a key at https://platform.kimi.ai",
         );
       },
     };
@@ -85,7 +85,7 @@ Keep this terminal open. Ctrl+C to stop.
 await warnLlmSetup(provider);
 
 if (!hasLlmKey(process.env)) {
-  console.log("/whoami /kids /today work now. To read photos, install Ollama and run: ollama pull qwen2.5vl\n");
+  console.log("/whoami /kids /today work now. To read photos, add MOONSHOT_API_KEY from https://platform.kimi.ai\n");
 }
 
 let offset = 0;
@@ -217,43 +217,21 @@ function sleep(ms: number): Promise<void> {
 async function warnLlmSetup(activeProvider: string): Promise<void> {
   if (activeProvider === "groq" || activeProvider === "gemini") {
     console.warn(
-      `${activeProvider} is blocked from Hong Kong. Do not use console.groq.com. Use Ollama on this Mac instead.`,
+      `${activeProvider} is blocked from Hong Kong. Use Kimi instead: https://platform.kimi.ai`,
     );
-    console.warn("In .dev.vars set LLM_PROVIDER=ollama and LLM_MODEL=qwen2.5vl, then: ollama pull qwen2.5vl\n");
+    console.warn("In .dev.vars set LLM_PROVIDER=kimi LLM_MODEL=kimi-k3 and paste MOONSHOT_API_KEY=\n");
     return;
   }
-  if (activeProvider !== "ollama") return;
-
-  const baseUrl = process.env.OPENAI_BASE_URL?.trim() || DEFAULT_OLLAMA_BASE_URL;
-  const model = process.env.LLM_MODEL?.trim() || DEFAULT_OLLAMA_MODEL;
-  const status = await probeOllama(baseUrl, model);
-  if (status.ok) {
-    console.log(`LLM: Ollama at ${baseUrl} model ${model}\n`);
-    return;
-  }
-  if (status.reason === "down") {
-    console.warn("Ollama is not running. Photos will fail until you do this:");
-    console.warn("  1. Install https://ollama.com/download and open the app");
-    console.warn("  2. ollama pull qwen2.5vl");
-    console.warn("  3. npm run local\n");
-    return;
-  }
-  console.warn(`Ollama is running but ${model} is not installed. Run: ollama pull ${model}\n`);
-}
-
-async function probeOllama(
-  baseUrl: string,
-  model: string,
-): Promise<{ ok: boolean; reason?: "down" | "missing-model" }> {
-  const root = baseUrl.replace(/\/v1\/?$/, "");
-  try {
-    const res = await fetch(`${root}/api/tags`, { signal: AbortSignal.timeout(2000) });
-    if (!res.ok) return { ok: false, reason: "down" };
-    const body = (await res.json()) as { models?: Array<{ name?: string }> };
-    const names = (body.models ?? []).map((item) => item.name ?? "");
-    const found = names.some((name) => name === model || name.startsWith(`${model}:`));
-    return found ? { ok: true } : { ok: false, reason: "missing-model" };
-  } catch {
-    return { ok: false, reason: "down" };
+  if (activeProvider === "kimi") {
+    const model = process.env.LLM_MODEL?.trim() || DEFAULT_KIMI_MODEL;
+    if (kimiApiKey(process.env)) {
+      console.log(`LLM: Kimi ${model} at https://api.moonshot.ai/v1\n`);
+    } else {
+      console.warn("MOONSHOT_API_KEY is empty. Photos will fail until you:");
+      console.warn("  1. Open https://platform.kimi.ai");
+      console.warn("  2. Create an API key");
+      console.warn("  3. Paste it on MOONSHOT_API_KEY= in .dev.vars");
+      console.warn("  4. npm run local\n");
+    }
   }
 }

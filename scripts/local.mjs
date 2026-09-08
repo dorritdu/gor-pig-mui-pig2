@@ -67,8 +67,8 @@ Open Telegram and send /whoami to @${username}
 Keep this terminal open. Ctrl+C to stop.
 `);
 
-if ((process.env.LLM_PROVIDER || "ollama") === "ollama") {
-  console.log("Photos need Ollama on this Mac: https://ollama.com/download then `ollama pull qwen2.5vl`\n");
+if ((process.env.LLM_PROVIDER || "kimi") === "kimi") {
+  console.log("Photos need MOONSHOT_API_KEY from https://platform.kimi.ai\n");
 }
 
 let offset = 0;

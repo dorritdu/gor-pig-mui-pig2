@@ -8,13 +8,13 @@ Forward a screenshot, PDF, or pasted circular. The bot reads it, asks you to con
 - **07:00 HKT** helper pack list
 - **Sunday 08:00 HKT** week-ahead
 
-Hosting is **$0**. On your Mac, photos are read by **Ollama** (`qwen2.5vl`) so they stay on this computer. Groq and Gemini websites are blocked from Hong Kong — do not use them. Cloudflare Worker + D1 + R2 is for a later public deploy.
+Hosting is **$0 to run the bot**. Notice photos are read by **Kimi** (`kimi-k3`) on Moonshot’s international API (Hong Kong). Groq and Gemini websites are blocked from Hong Kong — do not use them. Cloudflare Worker + D1 + R2 is for a later public deploy.
 
 The bot cannot open WhatsApp, eClass, or school apps. Forward or screenshot those into Telegram.
 
 ## What you can send
 
-- Photos / screen captures of circulars (Ollama `qwen2.5vl` reads these on your Mac)
+- Photos / screen captures of circulars (Kimi `kimi-k3` reads these)
 - Pasted text (email body or WhatsApp copy)
 - PDF pages you photograph or copy as text
 - Questions: “Tomorrow what special activities?”, “豬2 Monday bring what?”, “any reply slips?”
@@ -53,22 +53,19 @@ cp .env.example .dev.vars
 TELEGRAM_BOT_TOKEN=123456:your-real-token
 ```
 
-Leave the family id lines empty for the first run. `/whoami`, `/kids`, and `/today` work without Ollama.
+Leave the family id lines empty for the first run. `/whoami`, `/kids`, and `/today` work without a Kimi key.
 
-3. To read photos, install [Ollama](https://ollama.com/download), open the app, then:
-
-```bash
-ollama pull qwen2.5vl
-```
-
-That model is listed at [ollama.com/library/qwen2.5vl](https://ollama.com/library/qwen2.5vl) (~6 GB). In `.dev.vars` keep these lines (replace any `LLM_PROVIDER=groq` block):
+3. To read photos, open [platform.kimi.ai](https://platform.kimi.ai) on this Mac (Hong Kong uses this international site, **not** platform.kimi.com and **not** console.groq.com). Sign in, create an API key, and put this in `.dev.vars` (replace any Groq or Ollama block):
 
 ```bash
-LLM_PROVIDER=ollama
-OPENAI_BASE_URL=http://127.0.0.1:11434/v1
-OPENAI_API_KEY=ollama
-LLM_MODEL=qwen2.5vl
+LLM_PROVIDER=kimi
+MOONSHOT_API_KEY=paste-your-key-here
+LLM_MODEL=kimi-k3
 ```
+
+`kimi-k3` can read photos. Moonshot’s docs say it unlocks after a small top-up (minimum $1). Official vision models: [kimi-k3 and kimi-k2.6](https://platform.kimi.ai/docs/guide/use-kimi-vision-model).
+
+If that page shows `Forbidden`, stop and tell me.
 
 4. Start the bot and keep the terminal open:
 
@@ -112,6 +109,9 @@ Edit `seed.sql` first if you want real school names (defaults: 豬1 / 豬2, 學�
 ```bash
 npx wrangler secret put TELEGRAM_BOT_TOKEN
 npx wrangler secret put TELEGRAM_WEBHOOK_SECRET   # long random string
+npx wrangler secret put MOONSHOT_API_KEY
+npx wrangler secret put LLM_PROVIDER   # kimi
+npx wrangler secret put LLM_MODEL      # kimi-k3
 npx wrangler secret put ADMIN_TELEGRAM_IDS        # e.g. 111111111
 npx wrangler secret put PARENT_TELEGRAM_IDS       # you + partner
 npx wrangler secret put HELPER_TELEGRAM_IDS
@@ -172,4 +172,4 @@ schema.sql / seed.sql
 
 ## Privacy
 
-Only allowlisted Telegram ids can talk to the bot (`/whoami` is the exception so you can collect ids). On the Mac, notice photos stay on this computer (Ollama). They are not sent to Groq or Gemini.
+Only allowlisted Telegram ids can talk to the bot (`/whoami` is the exception so you can collect ids). Notice photos and text are sent to Kimi (Moonshot) for extraction and answers.
